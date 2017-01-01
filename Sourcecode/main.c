@@ -1,8 +1,7 @@
 /******************************************************************************************
- * Name: Uebung_3.c
+ * Name: main.c
  ******************************************************************************************
- * Autor: Christoph Jabs
- * Aufgabenblatt: UE3
+ * Author: Christoph Jabs
  ******************************************************************************************
  * Return values:
  * 0: All went well
@@ -17,7 +16,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
-#include "matrix.h"
+#include "attractiveness.h"
 
 const char urlPref[] =
 		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //Initialisation of the URL prefix

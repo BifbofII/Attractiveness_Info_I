@@ -1,11 +1,10 @@
 /******************************************************************************************
- * Name: matrix.c
+ * Name: attractiveness.c
  ******************************************************************************************
- * Autor: Christoph Jabs
- * Aufgabenblatt: UE3
+ * Author: Christoph Jabs
  ******************************************************************************************/
 
-#include "matrix.h"
+#include "attractiveness.h"
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>

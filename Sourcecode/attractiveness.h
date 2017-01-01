@@ -9,7 +9,22 @@
 #ifndef MATRIX_H_
 #define MATRIX_H_
 
+#if defined(_WIN32) //If operatingsystem is Windows
+#define OS 1
+
+
+#elif defined(__linux__) //If operatingsystem is Linux
+#define OS 2
+
+#elif defined(__APPLE__) && defined(__MACH__) //If operatingsystem is MacOS
+#define OS 3
+
+#else
+#define OS 0
+#endif
+
 #define STR_LEN 200 //String length used throughout the code
+#define NUM_CMD 3 //Number of system commands used
 
 typedef struct { //Matrix of integers
 	int** data;
@@ -45,7 +60,11 @@ typedef struct { //Characteristic every subject has
 extern const char urlPref[STR_LEN]; //Image URL prefix
 extern char dataPath[STR_LEN]; //Path to source data
 extern char createdDataPath[STR_LEN]; //Path to output folder
+extern char systemCommands[NUM_CMD][STR_LEN];; //Array of commands to execute on the system
 
+enum { mkdir, wget, open};
+
+int setup(); //Set global variables according to operating system
 Subject* readSubjects(FILE* fpDataMatrix, FILE* fpImages, FILE* fpGlasses,
 		FILE* fpEthnicity, FILE* fpAges); //Save all the information about all the subjects to an array of Subject structures
 IntMatrix readIntMatrix(FILE* source); //Read an integer matrix from a space separated text file
@@ -60,5 +79,7 @@ int getLineLength(FILE* source); //Get length of the longest line in a text file
 int printSubject(FILE* fp, Subject subject); //Print all information about a subject to a stream
 int showFile(char *file, int created); //Open file in preferred application for file type
 int downloadFile(char *file, char *target); //Download file specified in URL to target
+char* makeWindowsPath(char* path); //Change unix syntax path to Windows syntax path
+int makeDirectory(char* path); //Make a directory
 
 #endif /* MATRIX_H_ */

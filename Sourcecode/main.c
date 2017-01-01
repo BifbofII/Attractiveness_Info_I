@@ -10,6 +10,7 @@
  * 101: Error when opening file
  * 102: Error when opening Pipe
  * 103: No annotation for matrikel number
+ * 104: Unknown operating system
  ******************************************************************************************/
 
 #include<stdio.h>
@@ -17,11 +18,6 @@
 #include<string.h>
 #include<math.h>
 #include "attractiveness.h"
-
-const char urlPref[] =
-		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //Initialisation of the URL prefix
-char dataPath[STR_LEN] = ""; //Initialisation of the Path to source data
-char createdDataPath[STR_LEN] = ""; //Initialisation of the path to the output folder
 
 int main(int argc, char*argv[]) {
 	int i, j; //Counting variables
@@ -96,9 +92,12 @@ int main(int argc, char*argv[]) {
 		strcat(createdDataPath, "Results/");
 	}
 
+//Set global variables according to operating system
+	if (setup())
+		return 104;
+
 //Create directory for created Data
-	sprintf(tmpString, "mkdir %s", createdDataPath);
-	system(tmpString);
+	makeDirectory(createdDataPath);
 
 //Read subject information
 	fpDataMatrix = openFile("datamatrix_v6", "r");
@@ -487,12 +486,13 @@ int main(int argc, char*argv[]) {
 
 //Download all images sorted by rank
 	if (download) {
-		sprintf(tmpString, "mkdir %s/PicturesSorted", createdDataPath);
-		system(tmpString);
+		sprintf(tmpString, "%s/PicturesSorted", createdDataPath);
+		makeDirectory (tmpString);
 
 		for (i = 0; i < subjects[0].numberInstances; i++) {
 			sprintf(tmpString, "PicturesSorted/%04d_%f.jpg",
 					subjectsSorted[i]->rank, subjectsSorted[i]->score);
+
 			downloadFile(subjectsSorted[i]->image, tmpString);
 		}
 	}

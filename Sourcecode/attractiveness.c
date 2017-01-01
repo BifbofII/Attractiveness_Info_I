@@ -10,6 +10,55 @@
 #include<string.h>
 #include<math.h>
 
+const char urlPref[] =
+		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //URL prefix
+char dataPath[STR_LEN] = ""; //Path to source data
+char createdDataPath[STR_LEN] = ""; //Path to the output folder
+char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on the system
+
+int setup() { //Set global variables according to operating system
+	//Add slash at the end of path to data source if missing
+	if (dataPath[strlen(dataPath) - 1] != '/') {
+		dataPath[strlen(dataPath) + 1] = '\0';
+		dataPath[strlen(dataPath)] = '/';
+	}
+
+	//Add slash at the end of output path if missing
+	if (createdDataPath[strlen(createdDataPath) - 1] != '/') {
+		createdDataPath[strlen(createdDataPath) + 1] = '\0';
+		createdDataPath[strlen(createdDataPath)] = '/';
+	}
+
+	//
+	switch (OS) {
+	case 1:
+		sprintf(systemCommands[mkdir], "mkdir");
+		sprintf(systemCommands[wget], "wget");
+		sprintf(systemCommands[open], "start");
+
+		break;
+
+	case 2:
+		sprintf(systemCommands[mkdir], "mkdir");
+		sprintf(systemCommands[wget], "wget");
+		sprintf(systemCommands[open], "xdg-open");
+
+		break;
+
+	case 3:
+		sprintf(systemCommands[mkdir], "mkdir");
+		sprintf(systemCommands[wget], "wget");
+		sprintf(systemCommands[open], "open");
+
+		break;
+
+	default:
+		return 1;
+	}
+
+	return 0;
+}
+
 Subject* readSubjects(FILE* fpDataMatrix, FILE* fpImages, FILE* fpGlasses,
 		FILE* fpEthnicity, FILE* fpAges) { //Save all the information about all the subjects to an array of Subject structures
 	int i; //Counting variable
@@ -135,6 +184,9 @@ FILE* openFile(char* file, char* modus) { //Open a file for reading from dataPat
 
 	sprintf(destiny, "%s%s.txt",
 			!strcmp(modus, "r") ? dataPath : createdDataPath, file);
+
+	if (OS == 1)
+		makeWindowsPath(destiny);
 
 	return fopen(destiny, modus);
 }
@@ -394,8 +446,12 @@ int printSubject(FILE* fp, Subject subject) { //Print all information about a su
 int showFile(char *file, int created) { //Open file in preferred application for file type
 	char command[STR_LEN];
 
-	sprintf(command, "xdg-open %s%s", created ? createdDataPath : dataPath,
-			file);
+	sprintf(command, "%s %s%s", systemCommands[open],
+			created ? createdDataPath : dataPath, file);
+
+	if (OS == 1) //If OS is Windows, change path syntax
+		makeWindowsPath(command);
+
 	system(command);
 
 	return 0;
@@ -404,8 +460,35 @@ int showFile(char *file, int created) { //Open file in preferred application for
 int downloadFile(char *file, char *target) { //Download file specified in URL to target
 	char command[STR_LEN];
 
-	sprintf(command, "wget %s%s -O %s%s", urlPref, file, createdDataPath,
-			target);
+	sprintf(command, "%s %s%s -O %s%s", systemCommands[wget], urlPref, file,
+			createdDataPath, target);
+
+	if (OS == 1) //If OS is Windows, change path syntax
+		makeWindowsPath(command);
+
+	system(command);
+
+	return 0;
+}
+
+char* makeWindowsPath(char* path) { //Change unix syntax path to Windows syntax path
+	int i; //Counting variable
+
+	for (i = 0; i < strlen(path); i++)
+		if (path[i] == '/')
+			path[i] = '\\';
+
+	return path;
+}
+
+int makeDirectory(char* path) { //Make a directory
+	char command[STR_LEN];
+
+	if (OS == 1)
+		makeWindowsPath(path);
+
+	sprintf(command, "%s %s", systemCommands[mkdir], path);
+
 	system(command);
 
 	return 0;

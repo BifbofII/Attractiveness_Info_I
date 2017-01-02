@@ -28,7 +28,8 @@ int main(int argc, char*argv[]) {
 			highDivPlus, //Index of picture rated much better than average
 			highDivMinus = -1, //Index of picture rated much worse than average
 			gui = 0, //GUI activated or not
-			download = 0; //Download ranked pictures or not
+			download = 0, //Download ranked pictures or not
+			setupValue; //Return value of setup function
 	float avgScore = 0, //Global average score
 			varScore = 0; //Global variance in score
 	const float presicionScore = 0.01; //Value of resolution for Score-Number
@@ -93,8 +94,11 @@ int main(int argc, char*argv[]) {
 	}
 
 //Set global variables according to operating system
-	if (setup())
+	setupValue = setup();
+	if (setupValue == 104)
 		return 104;
+	else if (setupValue)
+		printf("%s wurde nicht gefunden\n", systemCommands[setupValue - 1]);
 
 //Create directory for created Data
 	makeDirectory(createdDataPath);
@@ -487,7 +491,7 @@ int main(int argc, char*argv[]) {
 //Download all images sorted by rank
 	if (download) {
 		sprintf(tmpString, "%s/PicturesSorted", createdDataPath);
-		makeDirectory (tmpString);
+		makeDirectory(tmpString);
 
 		for (i = 0; i < subjects[0].numberInstances; i++) {
 			sprintf(tmpString, "PicturesSorted/%04d_%f.jpg",

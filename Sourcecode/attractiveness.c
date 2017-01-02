@@ -10,6 +10,10 @@
 #include<string.h>
 #include<math.h>
 
+#if OS == 2
+#include<unistd.h>
+#endif
+
 const char urlPref[] =
 		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //URL prefix
 char dataPath[STR_LEN] = ""; //Path to source data
@@ -17,6 +21,8 @@ char createdDataPath[STR_LEN] = ""; //Path to the output folder
 char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on the system
 
 int setup() { //Set global variables according to operating system
+	int i; //Counting variable
+
 	//Add slash at the end of path to data source if missing
 	if (dataPath[strlen(dataPath) - 1] != '/') {
 		dataPath[strlen(dataPath) + 1] = '\0';
@@ -43,6 +49,18 @@ int setup() { //Set global variables according to operating system
 		sprintf(systemCommands[wget], "wget");
 		sprintf(systemCommands[open], "xdg-open");
 
+		//Check whether commands are executable
+		char tmpString[STR_LEN];
+		const char* PATH = getenv("PATH");
+		if(!PATH)
+			return 1;
+
+		for(i=0; i<NUM_CMD; i++){
+			sprintf(tmpString, "%s/%s", PATH, systemCommands[i]);
+			if (!access(tmpString, X_OK))
+				return i + 1;
+		}
+
 		break;
 
 	case 3:
@@ -53,7 +71,7 @@ int setup() { //Set global variables according to operating system
 		break;
 
 	default:
-		return 1;
+		return 104;
 	}
 
 	return 0;

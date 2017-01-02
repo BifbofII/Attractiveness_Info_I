@@ -59,14 +59,14 @@ typedef struct { //Characteristic every subject has
 extern const char urlPref[STR_LEN]; //Image URL prefix
 extern char dataPath[STR_LEN]; //Path to source data
 extern char createdDataPath[STR_LEN]; //Path to output folder
-extern char systemCommands[NUM_CMD][STR_LEN];
-;
-//Array of commands to execute on the system
+extern char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on the system
 
+//For calling system commands
 enum {
 	wget, open, gnuplot
 };
 
+//Error return values
 enum {
 	ER_MEM = 100, ER_FILE, ER_PIPE, ER_MNUM, ER_OS, ER_CMD, ER_PATH
 };

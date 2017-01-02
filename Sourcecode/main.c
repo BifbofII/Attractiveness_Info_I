@@ -102,7 +102,7 @@ int main(int argc, char*argv[]) {
 	else if (setupValue == ER_PATH)
 		return ER_PATH;
 	else if (setupValue){
-		printf("%s: command not found or not executable\n", systemCommands[setupValue - 1]);
+		printf("%s: command not found or not executable\nPlease install %s", systemCommands[setupValue - 1], systemCommands[setupValue - 1]);
 		return ER_CMD;
 	}
 

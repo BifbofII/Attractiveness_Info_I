@@ -79,13 +79,13 @@ int main(int argc, char*argv[]) {
 
 	if (!strcmp(dataPath, "")) {
 		//Get data path
-		printf("Geben Sie den Pfad zum Daten-Ordner ein: ");
+		printf("Please enter the path to the data folder: ");
 		scanf("%s", dataPath);
 	}
 
 	if (!userMatrNr) {
 		//Read Matrikel-Number
-		printf("Bitte geben Sie ihre Matrikennummer ein: ");
+		printf("Please enter your matrikel number: ");
 		scanf("%d", &userMatrNr);
 	}
 
@@ -102,7 +102,7 @@ int main(int argc, char*argv[]) {
 	else if (setupValue == ER_PATH)
 		return ER_PATH;
 	else if (setupValue){
-		printf("%s wurde nicht gefunden\n", systemCommands[setupValue - 1]);
+		printf("%s: command not found or not executable\n", systemCommands[setupValue - 1]);
 		return ER_CMD;
 	}
 
@@ -164,11 +164,11 @@ int main(int argc, char*argv[]) {
 			break;
 
 	if (i == annotations.lines) {
-		printf("Zu Ihrer Matrikelnummer wurde keine Annotation gefunden");
+		printf("There was no annotation found for your matrikel number");
 		return ER_MNUM;
 	} else {
 		userNumber = i;
-		printf("Der Username der verwendet wird lautet %s\n",
+		printf("Your user name is %s\n",
 				annotations.data[userNumber]);
 	}
 
@@ -267,12 +267,12 @@ int main(int argc, char*argv[]) {
 	if (gui) {
 		showFile("MissInformatics.jpg", 1);
 		printf(
-				"Sie sehen das bestbewertetste Bild\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The highest rated picture is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 
 		showFile("MissDissInformatics.jpg", 1);
 		printf(
-				"Sie sehen das schlechtbewertetste Bild\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The lowest rated picture is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 	}
 
@@ -349,7 +349,7 @@ int main(int argc, char*argv[]) {
 		strcat(tmpString, ".jpg");
 		showFile(tmpString, 1);
 		printf(
-				"Sie sehen das Bild welches Sie deutlich besser als der Durschnitt bewertet haben\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The picture you rated way higher than the average is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 
 		strcpy(tmpString, "MissDiversityMinus_");
@@ -357,7 +357,7 @@ int main(int argc, char*argv[]) {
 		strcat(tmpString, ".jpg");
 		showFile(tmpString, 1);
 		printf(
-				"Sie sehen das Bild welches Sie deutlich schlechter als der Durchschnitt bewertet haben\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The picture you rated way lower than the average is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 	}
 
@@ -410,7 +410,7 @@ int main(int argc, char*argv[]) {
 				createdDataPath);
 		fflush(gnuplotPipe);
 		printf(
-				"Sie sehen den Zusammenhang zwischen Alter und Attraktivität\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The correlation between age and score is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 
 		//Plot Glasses-Score GUI
@@ -419,7 +419,7 @@ int main(int argc, char*argv[]) {
 				createdDataPath);
 		fflush(gnuplotPipe);
 		printf(
-				"Sie sehen den Zusammenhang zwischen Brillen und Attraktivität\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The correlation between glasses and score is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 
 		//Plot Ethnicity-Score GUI
@@ -428,7 +428,7 @@ int main(int argc, char*argv[]) {
 				createdDataPath);
 		fflush(gnuplotPipe);
 		printf(
-				"Sie sehen den Zusammenhang zwischen Ethnie und Attraktivität\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The correlation between ethnicity and score is shown\n(Press <Enter> to continue...)\n");
 		getchar();
 
 		//Plot Score-Number GUI
@@ -446,7 +446,7 @@ int main(int argc, char*argv[]) {
 				createdDataPath);
 		fflush(gnuplotPipe);
 		printf(
-				"Sie sehen den Zusammenhang zwischen Attraktivität und Anzahl der Probanden\n(Druecken Sie <Enter> um fortzufahren...)\n");
+				"The correlation between score and number of subjects is shwon\n(Press <Enter> to continue...)\n");
 		getchar();
 	}
 

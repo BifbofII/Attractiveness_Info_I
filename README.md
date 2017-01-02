@@ -15,3 +15,5 @@ Does only run on Linux systems for now.
 - 102: Error when opening Pipe
 - 103: No annotation for matrikel number
 - 104: Unknown operating system
+- 105: Command not found
+- 106: unable to get PATH

@@ -11,6 +11,8 @@
  * 102: Error when opening Pipe
  * 103: No annotation for matrikel number
  * 104: Unknown operating system
+ * 105: Command not found
+ * 106: Could not get PATH
  ******************************************************************************************/
 
 #include<stdio.h>
@@ -95,10 +97,14 @@ int main(int argc, char*argv[]) {
 
 //Set global variables according to operating system
 	setupValue = setup();
-	if (setupValue == 104)
-		return 104;
-	else if (setupValue)
+	if (setupValue == ER_OS)
+		return ER_OS;
+	else if (setupValue == ER_PATH)
+		return ER_PATH;
+	else if (setupValue){
 		printf("%s wurde nicht gefunden\n", systemCommands[setupValue - 1]);
+		return ER_CMD;
+	}
 
 //Create directory for created Data
 	makeDirectory(createdDataPath);
@@ -112,17 +118,17 @@ int main(int argc, char*argv[]) {
 
 	if (fpDataMatrix == NULL || fpImages == NULL || fpGlasses == NULL
 			|| fpEthnicity == NULL || fpAges == NULL)
-		return 101; //Error opening files
+		return ER_FILE; //Error opening files
 
 	subjects = readSubjects(fpDataMatrix, fpImages, fpGlasses, fpEthnicity,
 			fpAges);
 	if (subjects == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 //Read datamatrix
 	dataMatrix = readIntMatrix(fpDataMatrix);
 	if (dataMatrix.data == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	fclose(fpDataMatrix);
 	fclose(fpImages);
@@ -133,18 +139,18 @@ int main(int argc, char*argv[]) {
 //Read user names
 	fp = openFile("annos_v6", "r");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	annotations = readStringArray(fp);
 	if (annotations.data == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	fclose(fp);
 
 //Write matrikelnumber array
 	matrNr = (int*) malloc(sizeof(int) * annotations.lines);
 	if (matrNr == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < annotations.lines; i++) {
 		matrNr[i] = 0;
@@ -159,7 +165,7 @@ int main(int argc, char*argv[]) {
 
 	if (i == annotations.lines) {
 		printf("Zu Ihrer Matrikelnummer wurde keine Annotation gefunden");
-		return 103;
+		return ER_MNUM;
 	} else {
 		userNumber = i;
 		printf("Der Username der verwendet wird lautet %s\n",
@@ -169,7 +175,7 @@ int main(int argc, char*argv[]) {
 //Get user data
 	userData = (int*) malloc(sizeof(int) * subjects[0].numberInstances);
 	if (userData == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < subjects[0].numberInstances; i++)
 		userData[i] = dataMatrix.data[userNumber][i];
@@ -177,7 +183,7 @@ int main(int argc, char*argv[]) {
 //Write user data to file
 	fp = openFile(annotations.data[userNumber], "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < subjects[0].numberInstances; i++) {
 		fprintf(fp, "%d", userData[i]);
@@ -191,7 +197,7 @@ int main(int argc, char*argv[]) {
 //Bubblesort subjects
 	subjectsSorted = malloc(sizeof(Subject*) * subjects[0].numberInstances);
 	if (subjectsSorted == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < subjects[0].numberInstances; i++)
 		subjectsSorted[i] = &subjects[i];
@@ -211,7 +217,7 @@ int main(int argc, char*argv[]) {
 //Write scores to file
 	fp = openFile("Scores", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < subjects[0].numberInstances; i++)
 		fprintf(fp, "%.6f\n", subjects[i].score);
@@ -220,7 +226,7 @@ int main(int argc, char*argv[]) {
 //Get number per score
 	scoreNumber = (int*) malloc(sizeof(int) * (1.0 / presicionScore + 1));
 	if (scoreNumber == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < (int) 1.0 / presicionScore + 1; i++) {
 		scoreNumber[i] = 0;
@@ -234,7 +240,7 @@ int main(int argc, char*argv[]) {
 //Write number per score to file
 	fp = openFile("ScoreNumber", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < (int) 1.0 / presicionScore + 1; i++)
 		fprintf(fp, "%f %d\n", i * presicionScore, scoreNumber[i]);
@@ -243,7 +249,7 @@ int main(int argc, char*argv[]) {
 //Write highest and lowest rated picture
 	fp = openFile("MissInf_MissDissInf", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	fprintf(fp, "Miss Informatics: %s%s\n", urlPref, subjectsSorted[0]->image);
 	printSubject(fp, *(subjectsSorted[0]));
@@ -284,7 +290,7 @@ int main(int argc, char*argv[]) {
 //Write average and variance in score to file
 	fp = openFile("ScoreAvgVar", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	fprintf(fp, "Average: %f\nVariance: %f", avgScore, varScore);
 	fclose(fp);
@@ -311,7 +317,7 @@ int main(int argc, char*argv[]) {
 
 	fp = openFile(tmpString, "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	fprintf(fp,
 			"diversePlus: %d\ndiverseMinus: %d\n\nMiss Diversity Plus: %s%s",
@@ -363,12 +369,12 @@ int main(int argc, char*argv[]) {
 			'e');
 
 	if (age == NULL || glasses == NULL || ethnicity == NULL)
-		return 100; //Error allocating memory
+		return ER_MEM; //Error allocating memory
 
 //Write characteristics to file
 	fp = openFile("AgeScore", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < age[0].numberInstances; i++)
 		fprintf(fp, "%d %.6f\n", age[i].value, age[i].avgScore);
@@ -376,7 +382,7 @@ int main(int argc, char*argv[]) {
 
 	fp = openFile("GlassesScore", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < glasses[0].numberInstances; i++)
 		fprintf(fp, "%d %.6f\n", glasses[i].value, glasses[i].avgScore);
@@ -384,7 +390,7 @@ int main(int argc, char*argv[]) {
 
 	fp = openFile("EthnicityScore", "w");
 	if (fp == NULL)
-		return 101; //Error opening file
+		return ER_FILE; //Error opening file
 
 	for (i = 0; i < ethnicity[0].numberInstances; i++)
 		fprintf(fp, "%d %.6f\n", ethnicity[i].value, ethnicity[i].avgScore);
@@ -393,7 +399,7 @@ int main(int argc, char*argv[]) {
 //Plotting
 	gnuplotPipe = popen("gnuplot -persistent", "w");
 	if (gnuplotPipe == NULL)
-		return 102; //Error opening Pipe
+		return ER_PIPE; //Error opening Pipe
 
 	fprintf(gnuplotPipe, "set yrange [0:]\n");
 

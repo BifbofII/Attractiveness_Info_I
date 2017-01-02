@@ -9,10 +9,8 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
-
-#if OS == 2
-#include<unistd.h>
-#endif
+#include<sys/types.h>
+#include<sys/stat.h>
 
 const char urlPref[] =
 		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //URL prefix
@@ -21,7 +19,15 @@ char createdDataPath[STR_LEN] = ""; //Path to the output folder
 char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on the system
 
 int setup() { //Set global variables according to operating system
-	int i; //Counting variable
+	int i, j, //Counting variables
+			good, //Boolean if command is executable
+			numberPath = 0; //Number of entries in PATH
+	char tmpString[STR_LEN], //String for temporary use as path storage
+			dividingChar = ':'; //Char that is used to divide PATH entries
+	const char* PATH = getenv("PATH"); //Get PATH environment variable
+	if (!PATH)
+		return ER_PATH; //Unable to get PATH
+	char** paths;
 
 	//Add slash at the end of path to data source if missing
 	if (dataPath[strlen(dataPath) - 1] != '/') {
@@ -35,44 +41,104 @@ int setup() { //Set global variables according to operating system
 		createdDataPath[strlen(createdDataPath)] = '/';
 	}
 
-	//
+	//Set and check commands depending on operating system
 	switch (OS) {
 	case 1:
-		sprintf(systemCommands[mkdir], "mkdir");
 		sprintf(systemCommands[wget], "wget");
 		sprintf(systemCommands[open], "start");
+		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
 
 	case 2:
-		sprintf(systemCommands[mkdir], "mkdir");
 		sprintf(systemCommands[wget], "wget");
 		sprintf(systemCommands[open], "xdg-open");
-
-		//Check whether commands are executable
-		char tmpString[STR_LEN];
-		const char* PATH = getenv("PATH");
-		if(!PATH)
-			return 1;
-
-		for(i=0; i<NUM_CMD; i++){
-			sprintf(tmpString, "%s/%s", PATH, systemCommands[i]);
-			if (!access(tmpString, X_OK))
-				return i + 1;
-		}
+		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
 
 	case 3:
-		sprintf(systemCommands[mkdir], "mkdir");
 		sprintf(systemCommands[wget], "wget");
 		sprintf(systemCommands[open], "open");
+		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
 
 	default:
-		return 104;
+		return ER_OS;
 	}
+
+	if (OS == 1) //If Windows, change dividing char to ';'
+		dividingChar = ';';
+
+	//Count entries of PATH
+	char* positionChar = strchr(PATH, dividingChar);
+	while (positionChar != NULL) {
+		numberPath++;
+		positionChar = strchr(positionChar + 1, dividingChar);
+	}
+	numberPath++;
+
+	//Allocate memory for paths array
+	paths = (char**) malloc(sizeof(char*) * numberPath);
+	if (paths == NULL)
+		return ER_MEM; //Error allocating memory
+
+	paths[0] = (char*) malloc(sizeof(char) * numberPath * STR_LEN);
+	if (paths[0] == NULL)
+		return ER_MEM; //Error allocating memory
+	for (i = 0; i < numberPath; i++)
+		paths[i] = paths[0] + i * STR_LEN;
+
+	j = 0;
+	for (i = 0; i < numberPath; i++, j++) {
+		while (PATH[j] != dividingChar && PATH[j] != '\0') {
+			sprintf(paths[i], "%s%c", paths[i], PATH[j]);
+			j++;
+		}
+
+		//Add slashes to end of path if not there
+		if (paths[i][strlen(paths[i]) - 1] != '/') {
+			paths[i][strlen(paths[i]) + 1] = '\0';
+			paths[i][strlen(paths[i])] = '/';
+		}
+	}
+
+#if OS == 1
+	//Check whether commands can be executed under windows
+	struct _stat tmpStat;
+	for (i=0; i < NUM_CMD; i++) {
+		good = 0;
+		for (j=0; j < numberPath; j++) {
+			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
+			if (!_stat(tmpString, &tmpStat) == -1) {
+				if (tmpStat.st_mode & S_IXUSR) {
+					good = 1;
+				}
+			}
+		}
+		if (!good) {
+			return i + 1;
+		}
+	}
+#else
+	//Check whether commands can be executed under unix
+	struct stat tmpStat;
+	for (i = 0; i < NUM_CMD; i++) {
+		good = 0;
+		for (j = 0; j < numberPath; j++) {
+			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
+			if (stat(tmpString, &tmpStat) != -1) {
+				if (tmpStat.st_mode & S_IEXEC) {
+					good = 1;
+				}
+			}
+		}
+		if (!good) {
+			return i + 1;
+		}
+	}
+#endif
 
 	return 0;
 }
@@ -307,7 +373,7 @@ Characteristic* evaluateCharacteristic(Subject* source, int numberSubjects,
 		free(lowestPtr);
 	}
 
-	//Calculate avgScore
+//Calculate avgScore
 	for (i = 0; i < result[0].numberInstances; i++) {
 		for (j = 0; j < source[0].numberInstances; j++) {
 			//Characteristic is age
@@ -328,7 +394,7 @@ Characteristic* evaluateCharacteristic(Subject* source, int numberSubjects,
 		result[i].avgScore /= result[i].numberSubjects;
 	}
 
-	//Calculate varScore
+//Calculate varScore
 	for (i = 0; i < result[0].numberInstances; i++) {
 		for (j = 0; j < source[0].numberInstances; j++) {
 			//Characteristic is age
@@ -505,9 +571,7 @@ int makeDirectory(char* path) { //Make a directory
 	if (OS == 1)
 		makeWindowsPath(path);
 
-	sprintf(command, "%s %s", systemCommands[mkdir], path);
-
-	system(command);
+	mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	return 0;
 }

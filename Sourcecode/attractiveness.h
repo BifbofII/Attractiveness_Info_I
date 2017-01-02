@@ -9,14 +9,13 @@
 #ifndef MATRIX_H_
 #define MATRIX_H_
 
-#if defined(_WIN32) //If operatingsystem is Windows
+#if defined(_WIN32) //If operating system is Windows
 #define OS 1
 
-
-#elif defined(__linux__) //If operatingsystem is Linux
+#elif defined(__linux__) //If operating system is Linux
 #define OS 2
 
-#elif defined(__APPLE__) && defined(__MACH__) //If operatingsystem is MacOS
+#elif defined(__APPLE__) && defined(__MACH__) //If operating system is MacOS
 #define OS 3
 
 #else
@@ -60,9 +59,17 @@ typedef struct { //Characteristic every subject has
 extern const char urlPref[STR_LEN]; //Image URL prefix
 extern char dataPath[STR_LEN]; //Path to source data
 extern char createdDataPath[STR_LEN]; //Path to output folder
-extern char systemCommands[NUM_CMD][STR_LEN];; //Array of commands to execute on the system
+extern char systemCommands[NUM_CMD][STR_LEN];
+;
+//Array of commands to execute on the system
 
-enum { mkdir, wget, open};
+enum {
+	wget, open, gnuplot
+};
+
+enum {
+	ER_MEM = 100, ER_FILE, ER_PIPE, ER_MNUM, ER_OS, ER_CMD, ER_PATH
+};
 
 int setup(); //Set global variables according to operating system
 Subject* readSubjects(FILE* fpDataMatrix, FILE* fpImages, FILE* fpGlasses,

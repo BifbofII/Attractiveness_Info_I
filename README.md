@@ -16,4 +16,4 @@ Does only run on Linux systems for now.
 - 103: No annotation for matrikel number
 - 104: Unknown operating system
 - 105: Command not found
-- 106: unable to get PATH
+- 106: Unable to get PATH

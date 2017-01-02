@@ -566,8 +566,6 @@ char* makeWindowsPath(char* path) { //Change unix syntax path to Windows syntax 
 }
 
 int makeDirectory(char* path) { //Make a directory
-	char command[STR_LEN];
-
 	if (OS == 1)
 		makeWindowsPath(path);
 

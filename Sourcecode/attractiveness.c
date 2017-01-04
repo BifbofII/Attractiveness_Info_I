@@ -119,12 +119,12 @@ int setup() { //Set global variables according to operating system
 	for (i=0; i < NUM_CMD; i++) {
 		good = 0;
 
-		if (i == downloadTarget) {
+		if (i == downloadTarget || i == downloadSource) {
 			break;
 		}
 
 		for (j=0; j < numberPath; j++) {
-			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
+			sprintf(tmpString, "%s%s.exe", paths[j], systemCommands[i]);
 			if (!_stat(tmpString, &tmpStat) == -1) {
 				if (tmpStat.st_mode & S_IXUSR) {
 					good = 1;
@@ -141,7 +141,7 @@ int setup() { //Set global variables according to operating system
 	for (i = 0; i < NUM_CMD; i++) {
 		good = 0;
 
-		if (i == downloadTarget) {
+		if (i == downloadTarget || i == downloadSource) {
 			break;
 		}
 

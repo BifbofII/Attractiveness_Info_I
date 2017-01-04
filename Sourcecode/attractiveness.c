@@ -49,7 +49,7 @@ int setup() { //Set global variables according to operating system
 	case 1: //Windows
 		sprintf(systemCommands[download], "Invoke-WebRequest -Uri");
 		sprintf(systemCommands[downloadTarget], "-OutputFile");
-		sprintf(systemCommands[open], "start");
+		sprintf(systemCommands[openStandard], "start");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
@@ -57,7 +57,7 @@ int setup() { //Set global variables according to operating system
 	case 2: //Linux
 		sprintf(systemCommands[download], "wget");
 		sprintf(systemCommands[downloadTarget], "-O");
-		sprintf(systemCommands[open], "xdg-open");
+		sprintf(systemCommands[openStandard], "xdg-open");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
@@ -65,7 +65,7 @@ int setup() { //Set global variables according to operating system
 	case 3: //OS X
 		sprintf(systemCommands[download], "curl");
 		sprintf(systemCommands[downloadTarget], "-o");
-		sprintf(systemCommands[open], "open");
+		sprintf(systemCommands[openStandard], "open");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
@@ -546,7 +546,7 @@ int printSubject(FILE* fp, Subject subject) { //Print all information about a su
 int showFile(char *file, int created) { //Open file in preferred application for file type
 	char command[STR_LEN];
 
-	sprintf(command, "%s %s%s", systemCommands[open],
+	sprintf(command, "%s %s%s", systemCommands[openStandard],
 			created ? createdDataPath : dataPath, file);
 
 	if (OS == 1) //If OS is Windows, change path syntax

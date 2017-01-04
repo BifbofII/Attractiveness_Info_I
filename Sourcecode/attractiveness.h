@@ -63,7 +63,7 @@ extern char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on 
 
 //For calling system commands
 enum {
-	download, downloadTarget, open, gnuplot
+	download, downloadTarget, openStandard, gnuplot
 };
 
 //Error return values

@@ -47,7 +47,8 @@ int setup() { //Set global variables according to operating system
 	//Set and check commands depending on operating system
 	switch (OS) {
 	case 1: //Windows
-		sprintf(systemCommands[download], "Invoke-WebRequest -Uri");
+		sprintf(systemCommands[download], "Invoke-WebRequest");
+		sprintf(systemCommands[downloadSource], "-Uri");
 		sprintf(systemCommands[downloadTarget], "-OutputFile");
 		sprintf(systemCommands[openStandard], "start");
 		sprintf(systemCommands[gnuplot], "gnuplot");
@@ -56,6 +57,7 @@ int setup() { //Set global variables according to operating system
 
 	case 2: //Linux
 		sprintf(systemCommands[download], "wget");
+		sprintf(systemCommands[downloadSource], "");
 		sprintf(systemCommands[downloadTarget], "-O");
 		sprintf(systemCommands[openStandard], "xdg-open");
 		sprintf(systemCommands[gnuplot], "gnuplot");
@@ -64,6 +66,7 @@ int setup() { //Set global variables according to operating system
 
 	case 3: //OS X
 		sprintf(systemCommands[download], "curl");
+		sprintf(systemCommands[downloadSource], "");
 		sprintf(systemCommands[downloadTarget], "-o");
 		sprintf(systemCommands[openStandard], "open");
 		sprintf(systemCommands[gnuplot], "gnuplot");

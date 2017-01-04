@@ -23,7 +23,7 @@
 #endif
 
 #define STR_LEN 200 //String length used throughout the code
-#define NUM_CMD 4 //Number of system commands used
+#define NUM_CMD 5 //Number of system commands used
 
 typedef struct { //Matrix of integers
 	int** data;
@@ -63,7 +63,7 @@ extern char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on 
 
 //For calling system commands
 enum {
-	download, downloadTarget, openStandard, gnuplot
+	download, downloadSource, downloadTarget, openStandard, gnuplot
 };
 
 //Error return values

@@ -47,9 +47,9 @@ int setup() { //Set global variables according to operating system
 	//Set and check commands depending on operating system
 	switch (OS) {
 	case 1: //Windows
-		sprintf(systemCommands[download], "Invoke-WebRequest");
-		sprintf(systemCommands[downloadSource], "-Uri");
-		sprintf(systemCommands[downloadTarget], "-OutputFile");
+		sprintf(systemCommands[download], "bitsadmin");
+		sprintf(systemCommands[downloadSource], "/transfer \"Attractiveness Job\"");
+		sprintf(systemCommands[downloadTarget], "");
 		sprintf(systemCommands[openStandard], "start");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
@@ -119,7 +119,7 @@ int setup() { //Set global variables according to operating system
 	for (i=0; i < NUM_CMD; i++) {
 		good = 0;
 
-		if (i == downloadTarget || i == downloadSource) {
+		if (i == downloadTarget || i == downloadSource || i == openStandard) {
 			break;
 		}
 

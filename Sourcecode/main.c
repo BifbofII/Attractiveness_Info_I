@@ -91,7 +91,13 @@ int main(int argc, char*argv[]) {
 
 	if (!strcmp(createdDataPath, "")) {
 		//Set Path for created Data
-		strcpy(createdDataPath, dataPath);
+		for (i = strlen(dataPath) - 2; i >= 0; i--) //Get parent directory of Data
+			if (dataPath[i] == '/' || dataPath[i] == '\\')
+				break;
+
+		for (j = 0; j <= i; j++)
+			createdDataPath[j] = dataPath[j];
+
 		strcat(createdDataPath, "Results/");
 	}
 
@@ -101,8 +107,9 @@ int main(int argc, char*argv[]) {
 		return ER_OS;
 	else if (setupValue == ER_PATH)
 		return ER_PATH;
-	else if (setupValue){
-		printf("%s: command not found or not executable\nPlease install %s", systemCommands[setupValue - 1], systemCommands[setupValue - 1]);
+	else if (setupValue) {
+		printf("%s: command not found or not executable\nPlease install %s",
+				systemCommands[setupValue - 1], systemCommands[setupValue - 1]);
 		return ER_CMD;
 	}
 
@@ -168,8 +175,7 @@ int main(int argc, char*argv[]) {
 		return ER_MNUM;
 	} else {
 		userNumber = i;
-		printf("Your user name is %s\n",
-				annotations.data[userNumber]);
+		printf("Your user name is %s\n", annotations.data[userNumber]);
 	}
 
 //Get user data

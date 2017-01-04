@@ -43,22 +43,25 @@ int setup() { //Set global variables according to operating system
 
 	//Set and check commands depending on operating system
 	switch (OS) {
-	case 1:
-		sprintf(systemCommands[wget], "wget");
+	case 1: //Windows
+		sprintf(systemCommands[download], "Invoke-WebRequest -Uri");
+		sprintf(systemCommands[downloadTarget], "-OutputFile");
 		sprintf(systemCommands[open], "start");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
 
-	case 2:
-		sprintf(systemCommands[wget], "wget");
+	case 2: //Linux
+		sprintf(systemCommands[download], "wget");
+		sprintf(systemCommands[downloadTarget], "-O");
 		sprintf(systemCommands[open], "xdg-open");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
 		break;
 
-	case 3:
-		sprintf(systemCommands[wget], "wget");
+	case 3: //OS X
+		sprintf(systemCommands[download], "curl");
+		sprintf(systemCommands[downloadTarget], "-o");
 		sprintf(systemCommands[open], "open");
 		sprintf(systemCommands[gnuplot], "gnuplot");
 
@@ -109,6 +112,11 @@ int setup() { //Set global variables according to operating system
 	struct _stat tmpStat;
 	for (i=0; i < NUM_CMD; i++) {
 		good = 0;
+
+		if (i == downloadTarget) {
+			break;
+		}
+
 		for (j=0; j < numberPath; j++) {
 			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
 			if (!_stat(tmpString, &tmpStat) == -1) {
@@ -126,6 +134,11 @@ int setup() { //Set global variables according to operating system
 	struct stat tmpStat;
 	for (i = 0; i < NUM_CMD; i++) {
 		good = 0;
+
+		if (i == downloadTarget) {
+			break;
+		}
+
 		for (j = 0; j < numberPath; j++) {
 			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
 			if (stat(tmpString, &tmpStat) != -1) {
@@ -544,8 +557,8 @@ int showFile(char *file, int created) { //Open file in preferred application for
 int downloadFile(char *file, char *target) { //Download file specified in URL to target
 	char command[STR_LEN];
 
-	sprintf(command, "%s %s%s -O %s%s", systemCommands[wget], urlPref, file,
-			createdDataPath, target);
+	sprintf(command, "%s %s%s %s %s%s", systemCommands[download], urlPref, file,
+			systemCommands[downloadTarget], createdDataPath, target);
 
 	if (OS == 1) //If OS is Windows, change path syntax
 		makeWindowsPath(command);

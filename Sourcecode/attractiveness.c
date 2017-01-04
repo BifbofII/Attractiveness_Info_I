@@ -9,6 +9,163 @@
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#if OS==1
+#include<direct.h>
+#endif
+
+const char urlPref[] =
+		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //URL prefix
+char dataPath[STR_LEN] = ""; //Path to source data
+char createdDataPath[STR_LEN] = ""; //Path to the output folder
+char systemCommands[NUM_CMD][STR_LEN]; //Array of commands to execute on the system
+
+int setup() { //Set global variables according to operating system
+	int i, j, //Counting variables
+			good, //Boolean if command is executable
+			numberPath = 0; //Number of entries in PATH
+	char tmpString[STR_LEN], //String for temporary use as path storage
+			dividingChar = ':'; //Char that is used to divide PATH entries
+	const char* PATH = getenv("PATH"); //Get PATH environment variable
+	if (!PATH)
+		return ER_PATH; //Unable to get PATH
+	char** paths;
+
+	//Add slash at the end of path to data source if missing
+	if (dataPath[strlen(dataPath) - 1] != '/') {
+		dataPath[strlen(dataPath) + 1] = '\0';
+		dataPath[strlen(dataPath)] = '/';
+	}
+
+	//Add slash at the end of output path if missing
+	if (createdDataPath[strlen(createdDataPath) - 1] != '/') {
+		createdDataPath[strlen(createdDataPath) + 1] = '\0';
+		createdDataPath[strlen(createdDataPath)] = '/';
+	}
+
+	//Set and check commands depending on operating system
+	switch (OS) {
+	case 1: //Windows
+		sprintf(systemCommands[download], "bitsadmin");
+		sprintf(systemCommands[downloadSource], "/transfer \"JobName\"");
+		strcpy(systemCommands[downloadTarget], "");
+		sprintf(systemCommands[openStandard], "start");
+		sprintf(systemCommands[gnuplot], "gnuplot");
+
+		makeWindowsPath(dataPath);
+		makeWindowsPath(createdDataPath);
+
+		break;
+
+	case 2: //Linux
+		sprintf(systemCommands[download], "wget");
+		strcpy(systemCommands[downloadSource], "");
+		sprintf(systemCommands[downloadTarget], "-O");
+		sprintf(systemCommands[openStandard], "xdg-open");
+		sprintf(systemCommands[gnuplot], "gnuplot");
+
+		break;
+
+	case 3: //OS X
+		sprintf(systemCommands[download], "curl");
+		strcpy(systemCommands[downloadSource], "");
+		sprintf(systemCommands[downloadTarget], "-o");
+		sprintf(systemCommands[openStandard], "open");
+		sprintf(systemCommands[gnuplot], "gnuplot");
+
+		break;
+
+	default:
+		return ER_OS;
+	}
+
+	if (OS == 1) //If Windows, change dividing char to ';'
+		dividingChar = ';';
+
+	//Count entries of PATH
+	char* positionChar = strchr(PATH, dividingChar);
+	while (positionChar != NULL) {
+		numberPath++;
+		positionChar = strchr(positionChar + 1, dividingChar);
+	}
+	numberPath++;
+
+	//Allocate memory for paths array
+	paths = (char**) malloc(sizeof(char*) * numberPath);
+	if (paths == NULL)
+		return ER_MEM; //Error allocating memory
+
+	paths[0] = (char*) malloc(sizeof(char) * numberPath * STR_LEN);
+	if (paths[0] == NULL)
+		return ER_MEM; //Error allocating memory
+	for (i = 0; i < numberPath; i++)
+		paths[i] = paths[0] + i * STR_LEN;
+
+	j = 0;
+	for (i = 0; i < numberPath; i++, j++) {
+		paths[i][0] = '\0';
+		while (PATH[j] != dividingChar && PATH[j] != '\0') {
+			sprintf(paths[i], "%s%c", paths[i], PATH[j]);
+			j++;
+		}
+
+		//Add slashes to end of path if not there
+		if (paths[i][strlen(paths[i]) - 1] != '/') {
+			paths[i][strlen(paths[i]) + 1] = '\0';
+			paths[i][strlen(paths[i])] = '/';
+		}
+	}
+
+#if OS == 1
+	//Check whether commands can be executed under windows
+	struct _stat tmpStat;
+	for (i=0; i < NUM_CMD; i++) {
+		good = 0;
+
+		if (i == downloadTarget || i == downloadSource || i == openStandard) {
+			continue;
+		}
+
+		for (j=0; j < numberPath; j++) {
+			sprintf(tmpString, "%s%s.exe", paths[j], systemCommands[i]);
+			makeWindowsPath(tmpString);
+			if (!_stat(tmpString, &tmpStat)) {
+				if (tmpStat.st_mode & S_IXUSR) {
+					good = 1;
+				}
+			}
+		}
+		if (!good) {
+			return i + 1;
+		}
+	}
+#else
+	//Check whether commands can be executed under unix
+	struct stat tmpStat;
+	for (i = 0; i < NUM_CMD; i++) {
+		good = 0;
+
+		if (i == downloadTarget || i == downloadSource) {
+			continue;
+		}
+
+		for (j = 0; j < numberPath; j++) {
+			sprintf(tmpString, "%s%s", paths[j], systemCommands[i]);
+			if (!stat(tmpString, &tmpStat)) {
+				if (tmpStat.st_mode & S_IEXEC) {
+					good = 1;
+				}
+			}
+		}
+		if (!good) {
+			return i + 1;
+		}
+	}
+#endif
+
+	return 0;
+}
 
 Subject* readSubjects(FILE* fpDataMatrix, FILE* fpImages, FILE* fpGlasses,
 		FILE* fpEthnicity, FILE* fpAges) { //Save all the information about all the subjects to an array of Subject structures
@@ -115,8 +272,7 @@ StringArray readStringArray(FILE* source) { //Read an text file to an array of s
 	for (i = 0; i < lines; i++) {
 		fgets(data[i], length + 1, source);
 		if (data[i][strlen(data[i]) - 1] == '\n') {
-			data[i][strlen(data[i]) - 1] = '\0';
-			data[i][strlen(data[i]) - 1] = '\0';
+			data[i][strlen(data[i]) - (OS == 1 ? 1 : 2)] = '\0';
 		} else
 			fseek(source, 1, SEEK_CUR);
 	}
@@ -135,6 +291,9 @@ FILE* openFile(char* file, char* modus) { //Open a file for reading from dataPat
 
 	sprintf(destiny, "%s%s.txt",
 			!strcmp(modus, "r") ? dataPath : createdDataPath, file);
+
+	if (OS == 1)
+		makeWindowsPath(destiny);
 
 	return fopen(destiny, modus);
 }
@@ -237,7 +396,7 @@ Characteristic* evaluateCharacteristic(Subject* source, int numberSubjects,
 		free(lowestPtr);
 	}
 
-	//Calculate avgScore
+//Calculate avgScore
 	for (i = 0; i < result[0].numberInstances; i++) {
 		for (j = 0; j < source[0].numberInstances; j++) {
 			//Characteristic is age
@@ -258,7 +417,7 @@ Characteristic* evaluateCharacteristic(Subject* source, int numberSubjects,
 		result[i].avgScore /= result[i].numberSubjects;
 	}
 
-	//Calculate varScore
+//Calculate varScore
 	for (i = 0; i < result[0].numberInstances; i++) {
 		for (j = 0; j < source[0].numberInstances; j++) {
 			//Characteristic is age
@@ -363,15 +522,20 @@ int getLineLength(FILE* source) { //Get length of the longest line in a text fil
 
 	position = ftell(source); //Get cursor position
 
-	fseek(source, 0, SEEK_SET); //Ste cursor to beginning of file
+	fseek(source, 0, SEEK_SET); //Set cursor to beginning of file
+
+	tmp = fgetc(source);
 
 	for (i = 0; i < lines; i++) {
-		tmp = fgetc(source);
 		length = 0;
-		while (tmp != '\n') {
+		while (tmp != '\n' && tmp != '\r') {
 			length++;
 			tmp = fgetc(source);
 		}
+
+		tmp = fgetc(source);
+		if (tmp == '\n')
+			tmp = fgetc(source);
 
 		if (length > maxLength)
 			maxLength = length;
@@ -394,8 +558,12 @@ int printSubject(FILE* fp, Subject subject) { //Print all information about a su
 int showFile(char *file, int created) { //Open file in preferred application for file type
 	char command[STR_LEN];
 
-	sprintf(command, "xdg-open %s%s", created ? createdDataPath : dataPath,
-			file);
+	sprintf(command, "%s %s%s", systemCommands[openStandard],
+			created ? createdDataPath : dataPath, file);
+
+	if (OS == 1) //If OS is Windows, change path syntax
+		makeWindowsPath(command);
+
 	system(command);
 
 	return 0;
@@ -403,10 +571,156 @@ int showFile(char *file, int created) { //Open file in preferred application for
 
 int downloadFile(char *file, char *target) { //Download file specified in URL to target
 	char command[STR_LEN];
+	char targetPath[STR_LEN];
 
-	sprintf(command, "wget %s%s -O %s%s", urlPref, file, createdDataPath,
-			target);
+	sprintf(targetPath, "%s%s", createdDataPath, target);
+
+	if (OS == 1) //If OS is Windows, change path syntax
+		makeWindowsPath(targetPath);
+
+	sprintf(command, "%s %s %s%s %s %s", systemCommands[download],
+			systemCommands[downloadSource], urlPref, file,
+			systemCommands[downloadTarget], targetPath);
+
 	system(command);
+
+	return 0;
+}
+
+char* makeWindowsPath(char* path) { //Change unix syntax path to Windows syntax path
+#if OS == 1
+int i; //Counting variable
+char cd[STR_LEN];//Current directory
+
+_getcwd(cd, STR_LEN);
+
+if (path[0] == '.') {
+	sprintf(cd, "%s/%s", cd, path);
+	sprintf(path, "%s", cd);
+}
+
+for (i = 0; i < strlen(path); i++)
+if (path[i] == '/')
+path[i] = '\\';
+#endif
+	return path;
+}
+
+int makeDirectory(char* path) { //Make a directory
+#if OS == 1
+makeWindowsPath(path);
+_mkdir(path);
+#else
+	mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+
+	return 0;
+}
+
+int plotGUI(int type, char* title, char* label, char* source, int numberLines,
+		float* lines) { //Plot values to GUI
+	char types[][STR_LEN] = { "linespoint", "boxes" }, //Plot types
+			path[STR_LEN]; //Path variable for input
+	int i, j; //Counting variables
+	FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
+	if (gnuplotPipe == NULL)
+		return ER_PIPE; //Error opening Pipe
+
+	sprintf(path, "%s%s", createdDataPath, source);
+	if (OS == 1) {
+		makeWindowsPath(path);
+		for (i = 0; i < strlen(path); i++) //Double all backslashes in path
+			if (path[i] == '\\' && path[i + 1] != '\\') {
+				path[strlen(path) + 1] = '\0';
+				for (j = strlen(path); j > i; j--)
+					path[j] = path[j - 1];
+				i++;
+			}
+	}
+
+	fprintf(gnuplotPipe, "set yrange [0:]\n");
+
+	for (i = 0; i < numberLines; i++) { //Add vertical lines
+		fprintf(gnuplotPipe, "set arrow from %f, graph 0 to %f, graph 1 nohead",
+				(double) lines[i], (double) lines[i]);
+		if (i % 2) //Make each second line red
+			fprintf(gnuplotPipe, " lc rgb 'red'\n");
+		else
+			fprintf(gnuplotPipe, " lc rgb 'black'\n");
+	}
+
+	fprintf(gnuplotPipe, "set title \"%s\"\n", title);
+	fprintf(gnuplotPipe, "plot '%s' with %s title \"%s\"\n", path, types[type],
+			label);
+
+	pclose(gnuplotPipe);
+
+	return 0;
+}
+
+int plotPNG(int type, char*title, char* label, char* source, char* target,
+		int numberLines, float* lines) { //Plot values to PNG
+	char types[][STR_LEN] = { "linespoint", "boxes" }, //Plot types
+			sourcePath[STR_LEN], targetPath[STR_LEN]; //Path Variables for input and output
+	int i, j, //Counting variables
+			fileExtention = 0; //Has the target the file ending .png?
+	FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
+	if (gnuplotPipe == NULL)
+		return ER_PIPE; //Error opening Pipe
+
+	sprintf(sourcePath, "%s%s", createdDataPath, source);
+	sprintf(targetPath, "%s%s", createdDataPath, target);
+
+	if (targetPath[strlen(targetPath) - 4] == '.') //Check if targetPath has file extention appended
+		if (targetPath[strlen(targetPath) - 3] == 'p'
+				|| targetPath[strlen(targetPath) - 2] == 'P')
+			if (targetPath[strlen(targetPath) - 2] == 'n'
+					|| targetPath[strlen(targetPath) - 2] == 'N')
+				if (targetPath[strlen(targetPath) - 1] == 'g'
+						|| targetPath[strlen(targetPath) - 2] == 'G')
+					fileExtention = 1;
+
+	if (!fileExtention) //Set file extention if not appended
+		strcat(targetPath, ".png");
+
+	if (OS == 1) { //If OS is Windows
+		makeWindowsPath(sourcePath);
+		makeWindowsPath(targetPath);
+		for (i = 0; i < strlen(sourcePath); i++) //Double all backslashes in sourcePath
+			if (sourcePath[i] == '\\' && sourcePath[i + 1] != '\\') {
+				sourcePath[strlen(sourcePath) + 1] = '\0';
+				for (j = strlen(sourcePath); j > i; j--)
+					sourcePath[j] = sourcePath[j - 1];
+				i++;
+			}
+		for (i = 0; i < strlen(targetPath); i++) //Double all backslashes in targetPath
+			if (targetPath[i] == '\\' && targetPath[i + 1] != '\\') {
+				targetPath[strlen(targetPath) + 1] = '\0';
+				for (j = strlen(targetPath); j > i; j--)
+					targetPath[j] = targetPath[j - 1];
+				i++;
+			}
+	}
+
+	fprintf(gnuplotPipe, "set yrange [0:]\n");
+
+	for (i = 0; i < numberLines; i++) { //Add vertical lines
+		fprintf(gnuplotPipe, "set arrow from %f, graph 0 to %f, graph 1 nohead",
+				(double) lines[i], (double) lines[i]);
+		if (i % 2) //Make each second line red
+			fprintf(gnuplotPipe, " lc rgb 'red'\n");
+		else
+			fprintf(gnuplotPipe, " lc rgb 'black'\n");
+	}
+
+	fprintf(gnuplotPipe, "set term png\n");
+	fprintf(gnuplotPipe, "set output \"%s\"\n", targetPath);
+
+	fprintf(gnuplotPipe, "set title \"%s\"\n", title);
+	fprintf(gnuplotPipe, "plot '%s' with %s title \"%s\"\n", sourcePath,
+			types[type], label);
+
+	pclose(gnuplotPipe);
 
 	return 0;
 }

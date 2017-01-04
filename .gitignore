@@ -37,3 +37,6 @@
 .cproject
 .project
 .settings/
+
+#Output folder of program
+/Results/

@@ -11,6 +11,9 @@
 #include<math.h>
 #include<sys/types.h>
 #include<sys/stat.h>
+#if OS==1
+#include<direct.h>
+#endif
 
 const char urlPref[] =
 		"http://mraetsch.rt-lions.de/Attractiveness_rel_2.0/olympicstomato/"; //URL prefix

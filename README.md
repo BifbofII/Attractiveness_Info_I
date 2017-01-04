@@ -1,10 +1,11 @@
 # Attractiveness_Info_I
 Software for the evaluation of attractiveness data needed for Informatics I at Reutlingen University.
 
-Does only run on Linux systems for now.
+Runs on Windows, OS X and Linux
 
 # Dependencies:
 - gnuplot (optional but recommended)
+- bitsadmin (Windows only. most systems should still have ist even though it's discontinued)
 
 # Return values:
 - 0: All went well

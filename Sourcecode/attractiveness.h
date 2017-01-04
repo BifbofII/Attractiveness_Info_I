@@ -22,7 +22,7 @@
 #define OS 0
 #endif
 
-#define STR_LEN 200 //String length used throughout the code
+#define STR_LEN 500 //String length used throughout the code
 #define NUM_CMD 5 //Number of system commands used
 
 typedef struct { //Matrix of integers
@@ -71,6 +71,11 @@ enum {
 	ER_MEM = 100, ER_FILE, ER_PIPE, ER_MNUM, ER_OS, ER_CMD, ER_PATH
 };
 
+//Plot types
+enum {
+	line, bars
+};
+
 int setup(); //Set global variables according to operating system
 Subject* readSubjects(FILE* fpDataMatrix, FILE* fpImages, FILE* fpGlasses,
 		FILE* fpEthnicity, FILE* fpAges); //Save all the information about all the subjects to an array of Subject structures
@@ -88,5 +93,7 @@ int showFile(char *file, int created); //Open file in preferred application for 
 int downloadFile(char *file, char *target); //Download file specified in URL to target
 char* makeWindowsPath(char* path); //Change unix syntax path to Windows syntax path
 int makeDirectory(char* path); //Make a directory
+int plotGUI(int type, char* title, char* label, char* source, int numberLines, float* lines); //Plot values to GUI
+int plotPNG(int type, char*title, char* label, char* source, char* target, int numberLines, float* lines); //Plot values to PNG
 
 #endif /* MATRIX_H_ */

@@ -30,7 +30,8 @@ int main(int argc, char*argv[]) {
 			highDivPlus, //Index of picture rated much better than average
 			highDivMinus = -1, //Index of picture rated much worse than average
 			gui = 0, //GUI activated or not
-			download = 0, //Download ranked pictures or not
+			downloadAll = 0, //Download ranked pictures or not
+			plot = 1, //Is plotting possible
 			setupValue; //Return value of setup function
 	float avgScore = 0, //Global average score
 			varScore = 0; //Global variance in score
@@ -64,13 +65,13 @@ int main(int argc, char*argv[]) {
 			else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "-N")) {
 				for (j = 0; j < strlen(argv[i + 1]); j++)
 					if (argv[i + 1][j] > 47 && argv[i + 1][j] < 58)
-						userMatrNr = userMatrNr * 10 + argv[i + 1][j] - 48;
+						userMatrNr = userMatrNr * 10 + argv[i + 1][j] - '0';
 				//GUI yes or no from command line
 			} else if (!strcmp(argv[i], "-g") || !strcmp(argv[i], "-G"))
 				gui = 1;
 			//Download yes or no from command line
 			else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "-D"))
-				download = 1;
+				downloadAll = 1;
 			//Output path from command line
 			else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "-O"))
 				strcpy(createdDataPath, argv[i + 1]);
@@ -107,7 +108,12 @@ int main(int argc, char*argv[]) {
 		return ER_OS;
 	else if (setupValue == ER_PATH)
 		return ER_PATH;
-	else if (setupValue) {
+	else if (setupValue == gnuplot + 1) {
+		printf(
+				"%s is not installed, therefore you will not get any graphical plots\nWe recommend you install %s and run this program again",
+				systemCommands[setupValue - 1], systemCommands[setupValue - 1]);
+		plot = 0;
+	} else if (setupValue) {
 		printf("%s: command not found or not executable\nPlease install %s",
 				systemCommands[setupValue - 1], systemCommands[setupValue - 1]);
 		return ER_CMD;
@@ -162,7 +168,7 @@ int main(int argc, char*argv[]) {
 	for (i = 0; i < annotations.lines; i++) {
 		matrNr[i] = 0;
 		for (j = 5; j >= 0; j--)
-			matrNr[i] += (annotations.data[i][11 - j] - 48) * pow(10, j);
+			matrNr[i] += (annotations.data[i][11 - j] - '0') * pow(10, j);
 	}
 
 //Get user annotation index
@@ -259,7 +265,7 @@ int main(int argc, char*argv[]) {
 
 	fprintf(fp, "Miss Informatics: %s%s\n", urlPref, subjectsSorted[0]->image);
 	printSubject(fp, *(subjectsSorted[0]));
-	fprintf(fp, "Miss Diss-Informatics: %s%s", urlPref,
+	fprintf(fp, "Miss Diss-Informatics: %s%s\n", urlPref,
 			subjectsSorted[subjects[0].numberInstances - 1]->image);
 	printSubject(fp, *(subjectsSorted[subjects[0].numberInstances - 1]));
 	fclose(fp);
@@ -326,13 +332,13 @@ int main(int argc, char*argv[]) {
 		return ER_FILE; //Error opening file
 
 	fprintf(fp,
-			"diversePlus: %d\ndiverseMinus: %d\n\nMiss Diversity Plus: %s%s",
+			"diversePlus: %d\ndiverseMinus: %d\n\nMiss Diversity Plus: %s%s\n",
 			diversePlus, diverseMinus, urlPref,
-			diversePlus ? "" : subjects[highDivPlus].image);
+			diversePlus ? subjects[highDivPlus].image : "");
 	if (diversePlus)
 		printSubject(fp, subjects[highDivPlus]);
-	fprintf(fp, "Miss Diversity Minus: %s%s", urlPref,
-			diverseMinus ? "" : subjects[highDivMinus].image);
+	fprintf(fp, "Miss Diversity Minus: %s%s\n", urlPref,
+			diverseMinus ? subjects[highDivMinus].image : "");
 	if (diverseMinus)
 		printSubject(fp, subjects[highDivMinus]);
 	fclose(fp);
@@ -403,113 +409,67 @@ int main(int argc, char*argv[]) {
 	fclose(fp);
 
 //Plotting
-	gnuplotPipe = popen("gnuplot -persistent", "w");
-	if (gnuplotPipe == NULL)
-		return ER_PIPE; //Error opening Pipe
+	if (plot) {
+		if (gui) {
+			//Plot Age-Score GUI
+			plotGUI(line, "Age-Score", "Score(Age)", "AgeScore.txt", 0, NULL);
+			printf(
+					"The correlation between age and score is shown\n(Press <Enter> to continue...)\n");
+			getchar();
 
-	fprintf(gnuplotPipe, "set yrange [0:]\n");
+			//Plotting Glasses-Score GUI
+			plotGUI(bars, "Glasses-Score", "Score(Glasses)", "GlassesScore.txt",
+					0,
+					NULL);
+			printf(
+					"The correlation between glasses and score is shown\n(Press <Enter> to continue...)\n");
+			getchar();
 
-	if (gui) {
-		//Plot Age-Score GUI
-		fprintf(gnuplotPipe, "set title \"Age-Score\"\n");
-		fprintf(gnuplotPipe, "plot '%sAgeScore.txt' with linespoints\n",
-				createdDataPath);
-		fflush(gnuplotPipe);
-		printf(
-				"The correlation between age and score is shown\n(Press <Enter> to continue...)\n");
-		getchar();
+			//Plot Ethnicity-Score GUI
+			plotGUI(bars, "Ethnicity-Score", "Score(Ethnicity)",
+					"EthnicityScore.txt", 0,
+					NULL);
+			printf(
+					"The correlation between ethnicity and score is shown\n(Press <Enter> to continue...)\n");
+			getchar();
 
-		//Plot Glasses-Score GUI
-		fprintf(gnuplotPipe, "set title \"Glasses-Score\"\n");
-		fprintf(gnuplotPipe, "plot '%sGlassesScore.txt' with boxes\n",
-				createdDataPath);
-		fflush(gnuplotPipe);
-		printf(
-				"The correlation between glasses and score is shown\n(Press <Enter> to continue...)\n");
-		getchar();
+			//Plot Score-Number GUI
+			float tmp[] = { avgScore - varScore, avgScore, avgScore + varScore };
+			plotGUI(line, "Score-Number", "Number(Score)", "ScoreNumber.txt",
+					sizeof(tmp) / sizeof(tmp[0]), tmp);
+			printf(
+					"The correlation between score and number of subjects is shown\n(Press <Enter> to continue...)\n");
+			getchar();
+		}
 
-		//Plot Ethnicity-Score GUI
-		fprintf(gnuplotPipe, "set title \"Ethnicity-Score\"\n");
-		fprintf(gnuplotPipe, "plot '%sEthnicityScore.txt' with boxes\n",
-				createdDataPath);
-		fflush(gnuplotPipe);
-		printf(
-				"The correlation between ethnicity and score is shown\n(Press <Enter> to continue...)\n");
-		getchar();
+		//Save Age-Score Plot
+		plotPNG(line, "Age-Score", "Score(Age)", "AgeScore.txt", "AgeScore", 0,
+		NULL);
 
-		//Plot Score-Number GUI
-		fprintf(gnuplotPipe, "set title \"Score-Number\"\n");
-		fprintf(gnuplotPipe,
-				"set arrow 1 from %f, graph 0 to %f, graph 1 nohead lc rgb 'black'\n",
-				avgScore, avgScore); //Line for average Score
-		fprintf(gnuplotPipe,
-				"set arrow 2 from %f, graph 0 to %f, graph 1 nohead lc rgb 'red'\n",
-				avgScore + varScore, avgScore + varScore); //Line for variance score plus
-		fprintf(gnuplotPipe,
-				"set arrow 3 from %f, graph 0 to %f, graph 1 nohead lc rgb 'red'\n",
-				avgScore - varScore, avgScore - varScore); //Line for variance score minus
-		fprintf(gnuplotPipe, "plot '%sScoreNumber.txt' with linespoints, \n",
-				createdDataPath);
-		fflush(gnuplotPipe);
-		printf(
-				"The correlation between score and number of subjects is shwon\n(Press <Enter> to continue...)\n");
-		getchar();
-	}
+		//Save Glasses-Score Plot
+		plotPNG(bars, "Glasses-Score", "Score(Glasses)", "GlassesScore.txt",
+				"GlassesScore", 0, NULL);
 
-	fprintf(gnuplotPipe, "set term png\n");
-	fprintf(gnuplotPipe, "unset arrow 1\nunset arrow 2\nunset arrow 3\n");
+		//Save Ethnicity-Score Plot
+		plotPNG(bars, "Ethnicity-Score", "Score(Ethnicity)",
+				"EthnicityScore.txt", "EthnicityScore", 0, NULL);
 
-//Save Age-Score Plot
-	fprintf(gnuplotPipe, "set output \"%sAgeScore.png\"\n", createdDataPath);
-	fprintf(gnuplotPipe, "set title \"Age-Score\"\n");
-	fprintf(gnuplotPipe, "plot '%sAgeScore.txt' with linespoints\n",
-			createdDataPath);
-	fflush(gnuplotPipe);
+		//Save Score-Number
+		float tmp[] = { avgScore - varScore, avgScore, avgScore + varScore };
+		plotPNG(line, "Score-Number", "Number(Score)", "ScoreNumber.txt",
+				"ScoreNumber", sizeof(tmp) / sizeof(tmp[0]), tmp);
 
-//Save Glasses-Score Plot
-	fprintf(gnuplotPipe, "set output \"%sGlassesScore.png\"\n",
-			createdDataPath);
-	fprintf(gnuplotPipe, "set title \"Glasses-Score\"\n");
-	fprintf(gnuplotPipe, "plot '%sGlassesScore.txt' with boxes\n",
-			createdDataPath);
-	fflush(gnuplotPipe);
+		//Download all images sorted by rank
+		if (downloadAll) {
+			sprintf(tmpString, "%s/PicturesSorted", createdDataPath);
+			makeDirectory(tmpString);
 
-//Save Ethnicity-Score Plot
-	fprintf(gnuplotPipe, "set output \"%sEthnicityScore.png\"\n",
-			createdDataPath);
-	fprintf(gnuplotPipe, "set title \"Ethnicity-Score\"\n");
-	fprintf(gnuplotPipe, "plot '%sEthnicityScore.txt' with boxes\n",
-			createdDataPath);
-	fflush(gnuplotPipe);
+			for (i = 0; i < subjects[0].numberInstances; i++) {
+				sprintf(tmpString, "PicturesSorted/%04d_%f.jpg",
+						subjectsSorted[i]->rank, subjectsSorted[i]->score);
 
-//Save Score-Number
-	fprintf(gnuplotPipe, "set output \"%sScoreNumber.png\"\n", createdDataPath);
-	fprintf(gnuplotPipe, "set title \"Score-Number\"\n");
-	fprintf(gnuplotPipe,
-			"set arrow 1 from %f, graph 0 to %f, graph 1 nohead lc rgb 'black'\n",
-			avgScore, avgScore); //Line for average score
-	fprintf(gnuplotPipe,
-			"set arrow 2 from %f, graph 0 to %f, graph 1 nohead lc rgb 'red'\n",
-			avgScore + varScore, avgScore + varScore); //Line for variance score plus
-	fprintf(gnuplotPipe,
-			"set arrow 3 from %f, graph 0 to %f, graph 1 nohead lc rgb 'red'\n",
-			avgScore - varScore, avgScore - varScore); //Line for variance score minus
-	fprintf(gnuplotPipe, "plot '%sScoreNumber.txt' with linespoints\n",
-			createdDataPath);
-	fflush(gnuplotPipe);
-
-	pclose(gnuplotPipe);
-
-//Download all images sorted by rank
-	if (download) {
-		sprintf(tmpString, "%s/PicturesSorted", createdDataPath);
-		makeDirectory(tmpString);
-
-		for (i = 0; i < subjects[0].numberInstances; i++) {
-			sprintf(tmpString, "PicturesSorted/%04d_%f.jpg",
-					subjectsSorted[i]->rank, subjectsSorted[i]->score);
-
-			downloadFile(subjectsSorted[i]->image, tmpString);
+				downloadFile(subjectsSorted[i]->image, tmpString);
+			}
 		}
 	}
 

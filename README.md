@@ -4,8 +4,7 @@ Software for the evaluation of attractiveness data needed for Informatics I at R
 Does only run on Linux systems for now.
 
 # Dependencies:
-- wget
-- gnuplot
+- gnuplot (optional but recommended)
 
 # Return values:
 - 0: All went well

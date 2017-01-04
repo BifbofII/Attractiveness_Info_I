@@ -579,10 +579,12 @@ char* makeWindowsPath(char* path) { //Change unix syntax path to Windows syntax 
 }
 
 int makeDirectory(char* path) { //Make a directory
-	if (OS == 1)
-		makeWindowsPath(path);
-
+#if OS == 1
+	makeWindowsPath(path);
+	_mkdir(path);
+#else
 	mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
 
 	return 0;
 }

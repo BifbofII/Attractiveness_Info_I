@@ -23,8 +23,9 @@
 
 int main(int argc, char*argv[]) {
 	int i, j; //Counting variables
-	int userMatrNr = 0, //Matrikelnumber of the user
-			userNumber, //Index of the users annotation
+	int userMatrikelNumber = 0, //Matrikelnumber of the user
+			userAnnotationNumber = 1, //Number of users annotation
+			userIndex, //Index of the users annotation
 			diversePlus = 0, //Number of times user rated higher than average
 			diverseMinus = 0, //Number of times user rated lower than average
 			highDivPlus, //Index of picture rated much better than average
@@ -37,7 +38,8 @@ int main(int argc, char*argv[]) {
 			varScore = 0; //Global variance in score
 	const float presicionScore = 0.01; //Value of resolution for Score-Number
 	int* scoreNumber = NULL; //Array for number of subjects with score i*presicionScore
-	int* matrNr = NULL; //Array of matrikelnumbers of the annotations
+	int* matrikelNumbers = NULL; //Array of matrikelnumbers of the annotations
+	int* annotationNumbers = NULL; //Array of annotation numbers
 	int* userData = NULL; //Array of users first annotation
 	char tmpString[STR_LEN]; //String for different temporary use
 	Subject* subjects = NULL; //Array of all subjects
@@ -47,8 +49,7 @@ int main(int argc, char*argv[]) {
 			*fpGlasses = NULL, //glasses.txt file
 			*fpEthnicity = NULL, //ethnicity.txt file
 			*fpAges = NULL, //ages.txt file
-			*fp = NULL, //File pointer for different temporary use
-			*gnuplotPipe; //Pipe to gnuplot
+			*fp = NULL; //File pointer for different temporary use
 	IntMatrix dataMatrix; //Interger matrix of all data
 	StringArray annotations; //String array of all user names
 	Characteristic *age = NULL, //All ages with average and variance in score
@@ -59,23 +60,44 @@ int main(int argc, char*argv[]) {
 	if (argc > 1)
 		for (i = 1; i < argc; i++) {
 			//Data path from command line
-			if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "-P"))
-				strcpy(dataPath, argv[i + 1]);
-			//Matrikelnumber from command line
-			else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "-N")) {
-				for (j = 0; j < strlen(argv[i + 1]); j++)
-					if (argv[i + 1][j] > 47 && argv[i + 1][j] < 58)
-						userMatrNr = userMatrNr * 10 + argv[i + 1][j] - '0';
+			if (!strcmp(argv[i], "-p") || !strcmp(argv[i], "-P")
+					|| !strcmp(argv[i], "--path")) {
+				if (i + 1 < argc)
+					strcpy(dataPath, argv[i + 1]);
+				//Matrikel number from command line
+			} else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "-N")
+					|| !strcmp(argv[i], "--matrikel-number")
+					|| !strcmp(argv[i], "--number")) {
+				if (i + 1 < argc)
+					for (j = 0; j < strlen(argv[i + 1]); j++)
+						if (argv[i + 1][j] > 47 && argv[i + 1][j] < 58)
+							userMatrikelNumber = userMatrikelNumber * 10
+									+ argv[i + 1][j] - '0';
+				//Annotation number from commandline
+			} else if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "-A")
+					|| !strcmp(argv[i], "--annotation")) {
+				if (i + 1 < argc) {
+					userAnnotationNumber = 0;
+					for (j = 0; j < strlen(argv[i + 1]); j++)
+						if (argv[i + 1][j] > 47 && argv[i + 1][j] < 58)
+							userAnnotationNumber = userAnnotationNumber * 10
+									+ argv[i + 1][j] - '0';
+				}
 				//GUI yes or no from command line
-			} else if (!strcmp(argv[i], "-g") || !strcmp(argv[i], "-G"))
+			} else if (!strcmp(argv[i], "-g") || !strcmp(argv[i], "-G")
+					|| !strcmp(argv[i], "--gui"))
 				gui = 1;
 			//Download yes or no from command line
-			else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "-D"))
+			else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "-D")
+					|| !strcmp(argv[i], "--download")
+					|| !strcmp(argv[i], "--download-all"))
 				downloadAll = 1;
 			//Output path from command line
-			else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "-O"))
-				strcpy(createdDataPath, argv[i + 1]);
-
+			else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "-O")
+					|| !strcmp(argv[i], "--output-path")) {
+				if (i + 1 < argc)
+					strcpy(createdDataPath, argv[i + 1]);
+			}
 		}
 
 	if (!strcmp(dataPath, "")) {
@@ -84,10 +106,10 @@ int main(int argc, char*argv[]) {
 		scanf("%s", dataPath);
 	}
 
-	if (!userMatrNr) {
+	if (!userMatrikelNumber) {
 		//Read Matrikel-Number
 		printf("Please enter your matrikel number: ");
-		scanf("%d", &userMatrNr);
+		scanf("%d", &userMatrikelNumber);
 	}
 
 	if (!strcmp(createdDataPath, "")) {
@@ -161,27 +183,39 @@ int main(int argc, char*argv[]) {
 	fclose(fp);
 
 //Write matrikelnumber array
-	matrNr = (int*) malloc(sizeof(int) * annotations.lines);
-	if (matrNr == NULL)
+	matrikelNumbers = (int*) malloc(sizeof(int) * annotations.lines);
+	if (matrikelNumbers == NULL)
 		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < annotations.lines; i++) {
-		matrNr[i] = 0;
+		matrikelNumbers[i] = 0;
 		for (j = 5; j >= 0; j--)
-			matrNr[i] += (annotations.data[i][11 - j] - '0') * pow(10, j);
+			matrikelNumbers[i] += (annotations.data[i][11 - j] - '0') * pow(10, j);
+	}
+
+//Write annotation number array
+	annotationNumbers = (int*) malloc(sizeof(int) * annotations.lines);
+	if (annotationNumbers == NULL)
+		return ER_MEM; //Error allocating memory
+
+	for (i = 0; i < annotations.lines; i++) {
+		annotationNumbers[i] = 0;
+		for (j = 1; j >= 0; j--)
+			annotationNumbers[i] += (annotations.data[i][14 - j] - '0')
+					* pow(10, j);
 	}
 
 //Get user annotation index
 	for (i = 0; i < annotations.lines; i++)
-		if (userMatrNr == matrNr[i])
+		if (userMatrikelNumber == matrikelNumbers[i] && userAnnotationNumber == annotationNumbers[i])
 			break;
 
 	if (i == annotations.lines) {
 		printf("There was no annotation found for your matrikel number");
 		return ER_MNUM;
 	} else {
-		userNumber = i;
-		printf("Your user name is %s\n", annotations.data[userNumber]);
+		userIndex = i;
+		printf("Your user name is %s\n", annotations.data[userIndex]);
 	}
 
 //Get user data
@@ -190,10 +224,10 @@ int main(int argc, char*argv[]) {
 		return ER_MEM; //Error allocating memory
 
 	for (i = 0; i < subjects[0].numberInstances; i++)
-		userData[i] = dataMatrix.data[userNumber][i];
+		userData[i] = dataMatrix.data[userIndex][i];
 
 //Write user data to file
-	fp = openFile(annotations.data[userNumber], "w");
+	fp = openFile(annotations.data[userIndex], "w");
 	if (fp == NULL)
 		return ER_FILE; //Error opening file
 
@@ -325,7 +359,7 @@ int main(int argc, char*argv[]) {
 
 //Write diversities to file
 	strcpy(tmpString, "Diversities_");
-	strcat(tmpString, annotations.data[userNumber]);
+	strcat(tmpString, annotations.data[userIndex]);
 
 	fp = openFile(tmpString, "w");
 	if (fp == NULL)
@@ -345,19 +379,19 @@ int main(int argc, char*argv[]) {
 
 //Download highest diverse pictures
 	strcpy(tmpString, "MissDiversityPlus_");
-	strcat(tmpString, annotations.data[userNumber]);
+	strcat(tmpString, annotations.data[userIndex]);
 	strcat(tmpString, ".jpg");
 	downloadFile(subjects[highDivPlus].image, tmpString);
 
 	strcpy(tmpString, "MissDiversityMinus_");
-	strcat(tmpString, annotations.data[userNumber]);
+	strcat(tmpString, annotations.data[userIndex]);
 	strcat(tmpString, ".jpg");
 	downloadFile(subjects[highDivMinus].image, tmpString);
 
 //Show highest diverse pictures
 	if (gui) {
 		strcpy(tmpString, "MissDiversityPlus_");
-		strcat(tmpString, annotations.data[userNumber]);
+		strcat(tmpString, annotations.data[userIndex]);
 		strcat(tmpString, ".jpg");
 		showFile(tmpString, 1);
 		printf(
@@ -365,7 +399,7 @@ int main(int argc, char*argv[]) {
 		getchar();
 
 		strcpy(tmpString, "MissDiversityMinus_");
-		strcat(tmpString, annotations.data[userNumber]);
+		strcat(tmpString, annotations.data[userIndex]);
 		strcat(tmpString, ".jpg");
 		showFile(tmpString, 1);
 		printf(

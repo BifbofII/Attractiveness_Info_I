@@ -249,6 +249,7 @@ IntMatrix readIntMatrix(FILE* source) { //Read an integer matrix from a space se
 StringArray readStringArray(FILE* source) { //Read an text file to an array of strings terminated by \n
 	int i, //Counting variable
 			position; //Position of cursor
+	char tmp;
 	StringArray array = { NULL, 0, 0 };
 
 	int lines = getLines(source);
@@ -271,10 +272,20 @@ StringArray readStringArray(FILE* source) { //Read an text file to an array of s
 
 	for (i = 0; i < lines; i++) {
 		fgets(data[i], length + 1, source);
-		if (data[i][strlen(data[i]) - 1] == '\n') {
-			data[i][strlen(data[i]) - (OS == 1 ? 1 : 2)] = '\0';
-		} else
-			fseek(source, 1, SEEK_CUR);
+
+		while (1) { //Get rid of eol characters
+			if (data[i][strlen(data[i]) - 1] == '\n'
+					|| data[i][strlen(data[i]) - 1] == '\r')
+				data[i][strlen(data[i]) - 1] = '\0';
+			else
+				break;
+		}
+
+		do
+			tmp = fgetc(source);
+		while (tmp == '\n' || tmp == '\r');
+
+		fseek(source, -1, SEEK_CUR);
 	}
 
 	fseek(source, position, SEEK_SET); //Set cursor back to where it was
@@ -286,16 +297,20 @@ StringArray readStringArray(FILE* source) { //Read an text file to an array of s
 	return array;
 }
 
-FILE* openFile(char* file, char* modus) { //Open a file for reading from dataPath or writing to createdDataPath
+FILE* openFile(char* file, char* mode) { //Open a file for reading from dataPath or writing to createdDataPath
 	char destiny[STR_LEN]; //Temporary string for complete file path
+	char modifiedMode[STR_LEN]; //New mode (with appended binary for windows)
 
 	sprintf(destiny, "%s%s.txt",
-			!strcmp(modus, "r") ? dataPath : createdDataPath, file);
+			!strcmp(mode, "r") ? dataPath : createdDataPath, file);
+	sprintf(modifiedMode, "%s", mode);
 
-	if (OS == 1)
+	if (OS == 1){
 		makeWindowsPath(destiny);
+		sprintf(modifiedMode, "%sb", mode);
+	}
 
-	return fopen(destiny, modus);
+	return fopen(destiny, modifiedMode);
 }
 
 Characteristic* evaluateCharacteristic(Subject* source, int numberSubjects,

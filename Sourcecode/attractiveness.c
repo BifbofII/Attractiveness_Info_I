@@ -131,7 +131,7 @@ int setup() { //Set global variables according to operating system
 			sprintf(tmpString, "%s%s.exe", paths[j], systemCommands[i]);
 			makeWindowsPath(tmpString);
 			if (!_stat(tmpString, &tmpStat)) {
-				if (tmpStat.st_mode & S_IXUSR) {
+				if (tmpStat.st_mode & S_IEXEC) {
 					good = 1;
 				}
 			}
@@ -622,7 +622,13 @@ int plotGUI(int type, char* title, char* label, char* source, int numberLines,
 	char types[][STR_LEN] = { "linespoint", "boxes" }, //Plot types
 			path[STR_LEN]; //Path variable for input
 	int i, j; //Counting variables
+
+#if OS == 1
+	FILE* gnuplotPipe = _popen("gnuplot -persistent", "w");
+#else
 	FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
+#endif
+
 	if (gnuplotPipe == NULL)
 		return ER_PIPE; //Error opening Pipe
 
@@ -664,7 +670,13 @@ int plotPNG(int type, char*title, char* label, char* source, char* target,
 			sourcePath[STR_LEN], targetPath[STR_LEN]; //Path Variables for input and output
 	int i, j, //Counting variables
 			fileExtention = 0; //Has the target the file ending .png?
+
+#if OS == 1
+	FILE* gnuplotPipe = _popen("gnuplot -persistent", "w");
+#else
 	FILE* gnuplotPipe = popen("gnuplot -persistent", "w");
+#endif
+
 	if (gnuplotPipe == NULL)
 		return ER_PIPE; //Error opening Pipe
 

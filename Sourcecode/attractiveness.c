@@ -305,9 +305,10 @@ FILE* openFile(char* file, char* mode) { //Open a file for reading from dataPath
 			!strcmp(mode, "r") ? dataPath : createdDataPath, file);
 	sprintf(modifiedMode, "%s", mode);
 
-	if (OS == 1){
+	if (OS == 1) {
 		makeWindowsPath(destiny);
-		sprintf(modifiedMode, "%sb", mode);
+		if (!strcmp(mode, "r"))
+			sprintf(modifiedMode, "%sb", mode);
 	}
 
 	return fopen(destiny, modifiedMode);

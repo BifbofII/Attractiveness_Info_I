@@ -674,7 +674,11 @@ int plotGUI(int type, char* title, char* label, char* source, int numberLines,
 	fprintf(gnuplotPipe, "plot '%s' with %s title \"%s\"\n", path, types[type],
 			label);
 
+#if OS == 1
+	_pclose(gnuplotPipe);
+#else
 	pclose(gnuplotPipe);
+#endif
 
 	return 0;
 }
@@ -746,8 +750,11 @@ int plotPNG(int type, char*title, char* label, char* source, char* target,
 	fprintf(gnuplotPipe, "set title \"%s\"\n", title);
 	fprintf(gnuplotPipe, "plot '%s' with %s title \"%s\"\n", sourcePath,
 			types[type], label);
-
+#if OS == 1
+	_pclose(gnuplotPipe);
+#else
 	pclose(gnuplotPipe);
+#endif
 
 	return 0;
 }

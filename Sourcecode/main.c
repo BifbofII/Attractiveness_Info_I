@@ -36,7 +36,7 @@ int main(int argc, char*argv[]) {
 			setupValue; //Return value of setup function
 	float avgScore = 0, //Global average score
 			varScore = 0; //Global variance in score
-	const float presicionScore = 0.01; //Value of resolution for Score-Number
+	const float presicionScore = 0.05; //Value of resolution for Score-Number
 	int* scoreNumber = NULL; //Array for number of subjects with score i*presicionScore
 	int* matrikelNumbers = NULL; //Array of matrikelnumbers of the annotations
 	int* annotationNumbers = NULL; //Array of annotation numbers
@@ -190,7 +190,8 @@ int main(int argc, char*argv[]) {
 	for (i = 0; i < annotations.lines; i++) {
 		matrikelNumbers[i] = 0;
 		for (j = 5; j >= 0; j--)
-			matrikelNumbers[i] += (annotations.data[i][11 - j] - '0') * pow(10, j);
+			matrikelNumbers[i] += (annotations.data[i][11 - j] - '0')
+					* pow(10, j);
 	}
 
 //Write annotation number array
@@ -207,7 +208,8 @@ int main(int argc, char*argv[]) {
 
 //Get user annotation index
 	for (i = 0; i < annotations.lines; i++)
-		if (userMatrikelNumber == matrikelNumbers[i] && userAnnotationNumber == annotationNumbers[i])
+		if (userMatrikelNumber == matrikelNumbers[i]
+				&& userAnnotationNumber == annotationNumbers[i])
 			break;
 
 	if (i == annotations.lines) {
@@ -418,6 +420,7 @@ int main(int argc, char*argv[]) {
 		return ER_MEM; //Error allocating memory
 
 //Write characteristics to file
+	//Average
 	fp = openFile("AgeScore", "w");
 	if (fp == NULL)
 		return ER_FILE; //Error opening file
@@ -440,6 +443,31 @@ int main(int argc, char*argv[]) {
 
 	for (i = 0; i < ethnicity[0].numberInstances; i++)
 		fprintf(fp, "%d %.6f\n", ethnicity[i].value, ethnicity[i].avgScore);
+	fclose(fp);
+
+	//Variance
+	fp = openFile("AgeVariance", "w");
+	if (fp == NULL)
+		return ER_FILE; //Error opening File
+
+	for (i = 0; i < age[0].numberInstances; i++)
+		fprintf(fp, "%d %.6f\n", age[i].value, age[i].varScore);
+	fclose(fp);
+
+	fp = openFile("GlassesVariance", "w");
+	if (fp == NULL)
+		return ER_FILE; //Error opening file
+
+	for (i = 0; i < glasses[0].numberInstances; i++)
+		fprintf(fp, "%d %.6f\n", glasses[i].value, glasses[i].varScore);
+	fclose(fp);
+
+	fp = openFile("EthnicityVariance", "w");
+	if (fp == NULL)
+		return ER_FILE; //Error opening file
+
+	for (i = 0; i < ethnicity[0].numberInstances; i++)
+		fprintf(fp, "%d %.6f\n", ethnicity[i].value, ethnicity[i].varScore);
 	fclose(fp);
 
 //Plotting

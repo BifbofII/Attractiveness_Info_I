@@ -15,10 +15,6 @@
  * 106: Could not get PATH
  ******************************************************************************************/
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<math.h>
 #include "attractiveness.h"
 
 int main(int argc, char*argv[]) {

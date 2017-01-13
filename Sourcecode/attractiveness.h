@@ -5,6 +5,14 @@
  ******************************************************************************************/
 
 #include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include<string.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#if OS==1
+#include<direct.h>
+#endif
 
 #ifndef MATRIX_H_
 #define MATRIX_H_
